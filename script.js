@@ -1,66 +1,52 @@
-const productContainer = document.getElementById("productContainer");
-const loadMoreBtn = document.getElementById("loadMoreBtn");
-const searchInput = document.getElementById("searchInput");
-const noResults = document.getElementById("noResults");
+const container = document.getElementById("product-container");
+const searchInput = document.getElementById("search");
+const loadMoreBtn = document.getElementById("load-more");
 
-let allProducts = [];
-let loadedProducts = [];
-let currentIndex = 0;
-const PRODUCTS_PER_LOAD = 5;
+let products = [];
+let visibleCount = 5;
 
-// Fetch products
 fetch("https://fakestoreapi.com/products")
   .then(res => res.json())
   .then(data => {
-    allProducts = data;
-    console.log("Fetched Products:", allProducts);
-    loadMoreProducts();
+    products = data;
+    console.log("Fetched Products:", products);
+    showProducts();
   });
 
-// Load next 5 products
-function loadMoreProducts() {
-  const nextProducts = allProducts.slice(currentIndex, currentIndex + PRODUCTS_PER_LOAD);
-  nextProducts.forEach(product => {
-    createProductCard(product);
-    loadedProducts.push(product);
-  });
+function showProducts() {
+  container.innerHTML = "";
 
-  currentIndex += PRODUCTS_PER_LOAD;
-  if (currentIndex >= allProducts.length) {
-    loadMoreBtn.style.display = "none";
-  }
-}
-
-// Create product card
-function createProductCard(product) {
-  const card = document.createElement("div");
-  card.className = "product-card";
-  card.innerHTML = `
-    <img src="${product.image}" alt="${product.title}" />
-    <h4>${product.title}</h4>
-    <p>₹ ${product.price}</p>
-  `;
-  card.addEventListener("click", () => {
-    window.location.href = `product.html?id=${product.id}`;
-  });
-  productContainer.appendChild(card);
-}
-
-// Search functionality
-searchInput.addEventListener("input", () => {
-  const query = searchInput.value.toLowerCase();
-  const filtered = loadedProducts.filter(product =>
-    product.title.toLowerCase().includes(query)
-  );
-
-  productContainer.innerHTML = "";
+  const filtered = products
+    .slice(0, visibleCount)
+    .filter(p => p.title.toLowerCase().includes(searchInput.value.toLowerCase()));
 
   if (filtered.length === 0) {
-    noResults.style.display = "block";
+    container.innerHTML = "<p>No products found.</p>";
   } else {
-    noResults.style.display = "none";
-    filtered.forEach(product => createProductCard(product));
+    filtered.forEach(product => {
+      const card = document.createElement("div");
+      card.className = "product-card";
+      card.innerHTML = `
+        <a href="product.html?id=${product.id}">
+          <img src="${product.image}" alt="${product.title}">
+          <h3>${product.title}</h3>
+          <p>$${product.price}</p>
+        </a>
+      `;
+      container.appendChild(card);
+    });
   }
+
+  if (visibleCount >= products.length) {
+    loadMoreBtn.style.display = "none";
+  } else {
+    loadMoreBtn.style.display = "block";
+  }
+}
+
+loadMoreBtn.addEventListener("click", () => {
+  visibleCount += 5;
+  showProducts();
 });
 
-loadMoreBtn.addEventListener("click", loadMoreProducts);
+searchInput.addEventListener("input", showProducts);
